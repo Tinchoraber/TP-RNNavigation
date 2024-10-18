@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { parsePhoneNumberFromString } from 'libphonenumber-js'; // Importar la función para validar el teléfono
+import { parsePhoneNumberFromString } from 'libphonenumber-js'; 
 
 export default function ConfiguracionNumEmergencia() {
   const [number, setNumber] = useState('');
   const [savedNumber, setSavedNumber] = useState('');
 
-  // Función para validar el formato del número de teléfono
   const validatePhoneNumber = (phone) => {
     const phoneNumber = parsePhoneNumberFromString(phone);
     return phoneNumber && phoneNumber.isValid();
@@ -18,29 +17,28 @@ export default function ConfiguracionNumEmergencia() {
       try {
         await AsyncStorage.setItem('emergencyNumber', number);
         setSavedNumber(number);
-        setNumber('');  // Limpiar el campo de entrada
-        alert('Emergency number saved!');
+        setNumber('');  
+        alert('Numero de Emergencia guardado!');
       } catch (error) {
-        alert('Failed to save number');
+        alert('Error guardando el numero');
       }
     } else {
-      // Mostrar una alerta si el número no es válido
-      Alert.alert('Invalid Number', 'Please enter a valid phone number with country code.');
+      Alert.alert('Numero invalido', 'Por favor ingresar un numero de telefono valido incluyendo codigo de pais.');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enter Emergency Number:</Text>
+      <Text style={styles.title}>Ingrese Numero de Contacto de Emergencia:</Text>
       <TextInput
         style={styles.input}
         keyboardType="phone-pad"
         value={number}
         onChangeText={setNumber}
-        placeholder="Emergency Number"
+        placeholder="Numero de Emergencia"
       />
-      <Button title="Save" onPress={saveNumber} />
-      {savedNumber ? <Text style={styles.savedText}>Saved Number: {savedNumber}</Text> : null}
+      <Button title="Guardar" onPress={saveNumber} />
+      {savedNumber ? <Text style={styles.savedText}>Numero Guardado: {savedNumber}</Text> : null}
     </View>
   );
 }

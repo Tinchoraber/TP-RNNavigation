@@ -19,7 +19,7 @@
     "axios": "^1.7.7",
     "barcode-scanner": "^0.1.1",
     "contacts": "^1.0.0",
-    "expo": "~51.0.26",
+    "expo": "^51.0.38",
     "expo-av": "^14.0.7",
     "expo-barcode-scanner": "^13.0.1",
     "expo-contacts": "^13.0.5",
