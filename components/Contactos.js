@@ -11,7 +11,7 @@ export default function Contactos() {
   const [emergencyNumber, setEmergencyNumber] = useState(''); 
 
   useEffect(() => {
-    const fetchContactsAndEmergencyNumber = async () => {
+    const fetchContacts = async () => {
       const { status } = await Contacts.requestPermissionsAsync();
       if (status === 'granted') {
         const { data } = await Contacts.getContactsAsync();
@@ -21,14 +21,25 @@ export default function Contactos() {
           setFilteredContacts(validContacts); 
         }
       }
+    };
 
+    fetchContacts();
+  }, []);
+
+  useEffect(() => {
+    const fetchEmergencyNumber = async () => {
       const savedEmergencyNumber = await AsyncStorage.getItem('emergencyNumber');
       if (savedEmergencyNumber) {
         setEmergencyNumber(savedEmergencyNumber);
       }
     };
 
-    fetchContactsAndEmergencyNumber();
+    fetchEmergencyNumber();
+
+    // Agregar un listener para cambios en el número de emergencia
+    const interval = setInterval(fetchEmergencyNumber, 1000); // Revisa cada segundo (ajustable)
+
+    return () => clearInterval(interval); // Limpia el interval al desmontar
   }, []);
 
   const cleanPhoneNumber = (number) => {
@@ -41,30 +52,41 @@ export default function Contactos() {
     return cleanedContactNumber === cleanedEmergencyNumber;
   };
 
- 
   useEffect(() => {
-    const filtered = contacts.filter(contact => {
+    let filtered = contacts.filter(contact => {
       const contactName = contact.name ? contact.name.toLowerCase().trim() : ''; 
       const contactNumber = contact.phoneNumbers[0].number;
 
-      
       return (
-        contactName.includes(searchQuery.toLowerCase().trim()) && 
-        cleanPhoneNumber(contactNumber).includes(cleanPhoneNumber(searchQuery))  
+        contactName.includes(searchQuery.toLowerCase().trim()) || 
+        cleanPhoneNumber(contactNumber).includes(cleanPhoneNumber(searchQuery))
       );
     });
+
+    // Mueve el contacto de emergencia al principio
+    const emergencyContactIndex = filtered.findIndex(contact => 
+      isEmergencyContact(contact.phoneNumbers[0].number)
+    );
+
+    if (emergencyContactIndex > -1) {
+      const [emergencyContact] = filtered.splice(emergencyContactIndex, 1);
+      filtered = [emergencyContact, ...filtered];
+    }
+
     setFilteredContacts(filtered);
-  }, [searchQuery, contacts]);
+  }, [searchQuery, contacts, emergencyNumber]);
 
   const renderItem = ({ item }) => {
     const phoneNumber = item.phoneNumbers && item.phoneNumbers.length > 0 ? item.phoneNumbers[0].number : 'Sin número';
     const isEmergency = isEmergencyContact(phoneNumber);
 
     return (
-      <View style={styles.item}>
-        <Text style={styles.text}>{item.name} - {phoneNumber}</Text>
+      <View style={[styles.item, isEmergency && styles.emergencyItem]}>
+        <Text style={[styles.text, isEmergency && styles.emergencyText]}>
+          {item.name} - {phoneNumber} {isEmergency && '(Contacto de Emergencia)'}
+        </Text>
         {isEmergency && (
-          <Ionicons name="checkmark-circle" size={24} color="green" /> 
+          <Ionicons name="checkmark-circle" size={24} color="green" />
         )}
       </View>
     );
@@ -107,7 +129,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
+  emergencyItem: {
+    backgroundColor: '#f8f8f8',
+  },
   text: {
     fontSize: 18,
+  },
+  emergencyText: {
+    color: 'red',
+    fontWeight: 'bold',
   },
 });

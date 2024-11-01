@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 
 export default function VideoFavorito() {
   const [text, setText] = useState('');
@@ -13,17 +13,25 @@ export default function VideoFavorito() {
       const saved = await AsyncStorage.getItem('videoText');
       if (saved) {
         setSavedText(saved);
-        setVideoUrl(saved);  // Assuming the URL is saved
+        setVideoUrl(saved);
       }
     };
     loadText();
   }, []);
 
   const saveText = async () => {
+    if (!text.endsWith('.mp4') && !text.endsWith('.mov') && !text.endsWith('.m4v')) {
+      Alert.alert(
+        'URL no válida', 
+        'Por favor, ingresa una URL directa de video (ejemplo: https://ejemplo.com/video.mp4)'
+      );
+      return;
+    }
+    
     await AsyncStorage.setItem('videoText', text);
     setSavedText(text);
     setVideoUrl(text);
-    alert('Text saved!');
+    Alert.alert('¡Éxito!', 'URL guardada correctamente');
   };
 
   return (
@@ -32,19 +40,24 @@ export default function VideoFavorito() {
         style={styles.input}
         value={text}
         onChangeText={setText}
-        placeholder="Enter video URL"
+        placeholder="Ingresa la URL del video (formato .mp4, .mov, .m4v)"
       />
-      <Button title="Save" onPress={saveText} />
+      <Button title="Guardar" onPress={saveText} />
       {videoUrl ? (
-        <Video
-          source={{ uri: videoUrl }}
-          rate={1.0}
-          volume={1.0}
-          isMuted={false}
-          resizeMode="cover"
-          shouldPlay
-          style={{ width: 300, height: 300, marginTop: 20 }}
-        />
+        <View style={styles.videoContainer}>
+          <Video
+            source={{ uri: videoUrl }}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            isLooping
+            shouldPlay
+            style={styles.video}
+            onError={(error) => {
+              Alert.alert('Error', 'No se pudo reproducir el video');
+              console.log(error);
+            }}
+          />
+        </View>
       ) : null}
     </View>
   );
@@ -62,4 +75,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 5,
   },
+  videoContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  video: {
+    width: 300,
+    height: 300,
+  }
 });
