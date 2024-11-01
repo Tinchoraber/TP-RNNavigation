@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,7 +17,18 @@ const Stack = createStackNavigator();
 
 function QRStackNavigator() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: Platform.select({ ios: '#fff', android: '#f8f8f8' }),
+          elevation: Platform.select({ ios: 0, android: 4 }),
+          shadowOpacity: Platform.OS === 'ios' ? 0.2 : 0,
+        },
+        headerTintColor: '#333',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}>
       <Stack.Screen 
         name="ScanQR" 
         component={CodigoQR}
@@ -27,13 +39,6 @@ function QRStackNavigator() {
         component={IntegrantesScreen}
         options={{
           title: 'Integrantes del Equipo',
-          headerStyle: {
-            backgroundColor: '#fff',
-          },
-          headerTintColor: '#333',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
         }}
       />
     </Stack.Navigator>
@@ -64,6 +69,16 @@ export default function App() {
           },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
+          tabBarStyle: {
+            height: Platform.OS === 'ios' ? 88 : 60,
+            paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          },
+          headerStyle: {
+            height: Platform.OS === 'ios' ? 90 : 60,
+            backgroundColor: Platform.select({ ios: '#fff', android: '#f8f8f8' }),
+            elevation: Platform.select({ ios: 0, android: 4 }),
+            shadowOpacity: Platform.OS === 'ios' ? 0.2 : 0,
+          },
         })}>
         <Tab.Screen name="Clima" component={Clima} />
         <Tab.Screen name="QR" component={QRStackNavigator} />

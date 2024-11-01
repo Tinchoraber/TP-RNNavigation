@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, Platform } from 'react-native';
 import * as Contacts from 'expo-contacts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,14 +12,20 @@ export default function Contactos() {
 
   useEffect(() => {
     const fetchContacts = async () => {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status === 'granted') {
-        const { data } = await Contacts.getContactsAsync();
-        if (data.length > 0) {
-          const validContacts = data.filter(contact => contact.phoneNumbers && contact.phoneNumbers.length > 0);
-          setContacts(validContacts);
-          setFilteredContacts(validContacts); 
+      try {
+        const { status } = await Contacts.requestPermissionsAsync();
+        if (status === 'granted') {
+          const { data } = await Contacts.getContactsAsync({
+            fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+          });
+          if (data.length > 0) {
+            const validContacts = data.filter(contact => contact.phoneNumbers && contact.phoneNumbers.length > 0);
+            setContacts(validContacts);
+            setFilteredContacts(validContacts); 
+          }
         }
+      } catch (error) {
+        console.error('Error al cargar contactos:', error);
       }
     };
 
@@ -28,18 +34,19 @@ export default function Contactos() {
 
   useEffect(() => {
     const fetchEmergencyNumber = async () => {
-      const savedEmergencyNumber = await AsyncStorage.getItem('emergencyNumber');
-      if (savedEmergencyNumber) {
-        setEmergencyNumber(savedEmergencyNumber);
+      try {
+        const savedEmergencyNumber = await AsyncStorage.getItem('emergencyNumber');
+        if (savedEmergencyNumber) {
+          setEmergencyNumber(savedEmergencyNumber);
+        }
+      } catch (error) {
+        console.error('Error al cargar número de emergencia:', error);
       }
     };
 
     fetchEmergencyNumber();
-
-    // Agregar un listener para cambios en el número de emergencia
-    const interval = setInterval(fetchEmergencyNumber, 1000); // Revisa cada segundo (ajustable)
-
-    return () => clearInterval(interval); // Limpia el interval al desmontar
+    const interval = setInterval(fetchEmergencyNumber, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const cleanPhoneNumber = (number) => {
@@ -99,11 +106,15 @@ export default function Contactos() {
         placeholder="Buscar por nombre o número"
         value={searchQuery}
         onChangeText={setSearchQuery}
+        placeholderTextColor="#999"
       />
       <FlatList
         data={filteredContacts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={10}
       />
     </View>
   );
@@ -112,28 +123,32 @@ export default function Contactos() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: Platform.select({ ios: 20, android: 16 }),
+    backgroundColor: '#fff',
   },
   searchInput: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#ccc',
-    padding: 10,
+    padding: Platform.select({ ios: 12, android: 10 }),
     marginBottom: 20,
     borderRadius: 5,
+    backgroundColor: Platform.select({ ios: '#f8f8f8', android: '#fff' }),
+    fontSize: 16,
   },
   item: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
+    padding: Platform.select({ ios: 20, android: 16 }),
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#ccc',
   },
   emergencyItem: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: Platform.select({ ios: '#f8f8f8', android: '#f5f5f5' }),
   },
   text: {
-    fontSize: 18,
+    fontSize: Platform.select({ ios: 16, android: 14 }),
+    flex: 1,
   },
   emergencyText: {
     color: 'red',

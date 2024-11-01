@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Alert, Platform, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode } from 'expo-av';
 
@@ -7,13 +7,19 @@ export default function VideoFavorito() {
   const [text, setText] = useState('');
   const [savedText, setSavedText] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const loadText = async () => {
-      const saved = await AsyncStorage.getItem('videoText');
-      if (saved) {
-        setSavedText(saved);
-        setVideoUrl(saved);
+      try {
+        const saved = await AsyncStorage.getItem('videoText');
+        if (saved) {
+          setSavedText(saved);
+          setVideoUrl(saved);
+        }
+      } catch (error) {
+        console.error('Error al cargar el video:', error);
+        Alert.alert('Error', 'No se pudo cargar el video guardado');
       }
     };
     loadText();
@@ -28,10 +34,17 @@ export default function VideoFavorito() {
       return;
     }
     
-    await AsyncStorage.setItem('videoText', text);
-    setSavedText(text);
-    setVideoUrl(text);
-    Alert.alert('¡Éxito!', 'URL guardada correctamente');
+    setIsLoading(true);
+    try {
+      await AsyncStorage.setItem('videoText', text);
+      setSavedText(text);
+      setVideoUrl(text);
+      Alert.alert('¡Éxito!', 'URL guardada correctamente');
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo guardar la URL del video');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,8 +54,14 @@ export default function VideoFavorito() {
         value={text}
         onChangeText={setText}
         placeholder="Ingresa la URL del video (formato .mp4, .mov, .m4v)"
+        placeholderTextColor="#999"
       />
-      <Button title="Guardar" onPress={saveText} />
+      <Button 
+        title={isLoading ? "Guardando..." : "Guardar"} 
+        onPress={saveText}
+        disabled={isLoading}
+      />
+      {isLoading && <ActivityIndicator style={styles.loader} />}
       {videoUrl ? (
         <View style={styles.videoContainer}>
           <Video
@@ -50,11 +69,11 @@ export default function VideoFavorito() {
             useNativeControls
             resizeMode={ResizeMode.CONTAIN}
             isLooping
-            shouldPlay
+            shouldPlay={false}
             style={styles.video}
             onError={(error) => {
               Alert.alert('Error', 'No se pudo reproducir el video');
-              console.log(error);
+              console.error('Error de video:', error);
             }}
           />
         </View>
@@ -67,20 +86,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: Platform.select({ ios: 20, android: 16 }),
+    backgroundColor: '#fff',
   },
   input: {
-    borderWidth: 1,
-    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Platform.select({ ios: 12, android: 10 }),
     marginBottom: 20,
     borderRadius: 5,
+    backgroundColor: Platform.select({ ios: '#f8f8f8', android: '#fff' }),
+    fontSize: 16,
   },
   videoContainer: {
     marginTop: 20,
     alignItems: 'center',
+    width: '100%',
+    aspectRatio: 16/9,
   },
   video: {
-    width: 300,
-    height: 300,
+    width: '100%',
+    height: '100%',
+  },
+  loader: {
+    marginTop: 20,
   }
 });
